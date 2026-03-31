@@ -1,11 +1,3 @@
-- [Table of contents](#org832ed47)
-- [Description](#description)
-  - [Ideas for later](#ideas-for-later)
-- [Job done & ideas](#job-done--ideas)
-- [Contributions](#contributions)
-
-
-
 <a id="org832ed47"></a>
 
 # Table of contents     :toc:
