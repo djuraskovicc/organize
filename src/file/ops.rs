@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::{
     fs,
     io, 
@@ -15,7 +17,7 @@ use nom_exif::{
 fn get_time(path: &Path) -> Option<String> {
     let mut parser = MediaParser::new();
     let ms = MediaSource::file_path(path).ok()?;
-
+    
     if ms.has_exif() {
         let iter: ExifIter = parser.parse(ms).ok()?;
         let exif: Exif = iter.into();
@@ -24,7 +26,7 @@ fn get_time(path: &Path) -> Option<String> {
             .or_else(|| exif.get(ExifTag::ModifyDate))?;
 
         return date_val.as_time_components().map(|(ndt, _offset)| {
-            ndt.format("%Y-%m-%d %H:%M").to_string()
+            ndt.format("%Y-%m-%d").to_string()
         });
     }
 
@@ -51,17 +53,30 @@ fn create_dirs(inpath: &PathBuf) -> io::Result<()> {
     Ok(())
 }
 
-fn copy_file(path: &PathBuf, outpath: &PathBuf, time: String) -> io::Result<()> {
-    // TODO:
-    // Implement logic to create path based on file time creation
-    // then call create_dirs function. 
+fn copy_file(filepath: &Path, outpath: &PathBuf) -> io::Result<()> {
+    create_dirs(outpath)?;
 
-    if !outpath.exists() {
-	create_dirs(outpath)?;
+    if let Some(timedate) = get_time(filepath) {
+	let mut new_path = dirs::home_dir()
+	    .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Couldn't find HOME directory"))?;
+	new_path.push(outpath);
+	new_path.push(timedate);
+
+	create_dirs(&new_path)?;
+        new_path.push(filepath.file_name().unwrap());
+
+	// Fix bug:
+	// For some reason when I copy file to another destination it has 0 bytes.
+	// Everything else is fine.
+
+	// Reminder:
+	// This rust exif library doesn't get metadata most of the time, so maybe I need
+	// to get back to exiftool or try something new.
+
+	//fs::copy(filepath, new_path)?;
+    } else {
+	eprintln!("Couldn't get date!");
     }
-
-    // Function rename moves files
-    fs::rename(path, outpath)?;
 
     Ok(())
 }
@@ -70,7 +85,7 @@ fn move_file() -> io::Result<()> {
     Ok(())
 }
 
-pub fn walk_dir(inpath: &PathBuf, _outpath: &PathBuf) -> io::Result<()> {
+pub fn walk_dir(inpath: &PathBuf, outpath: &PathBuf) -> io::Result<()> {
     if !inpath.exists() {
 	return Err(io::Error::new(io::ErrorKind::NotFound, "Input path doesn't exist!"));
     }
@@ -82,11 +97,7 @@ pub fn walk_dir(inpath: &PathBuf, _outpath: &PathBuf) -> io::Result<()> {
     for entry in WalkDir::new(inpath).into_iter().filter_map(|e| e.ok()) {
 	if !entry.file_type().is_file() { continue; }
 
-	if let Some(time) = get_time(entry.path()) {
-	    println!("{time}");
-	} else {
-	    eprintln!("Couldn't get date!");
-	}
+	copy_file(entry.path(), outpath)?;
     }
 
     Ok(())
