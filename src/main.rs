@@ -1,17 +1,21 @@
 use std::{
     env,
-    error::Error,
-    path::PathBuf
+    process,
 };
+use org::cli::parser::CliParser;
 
-use org::file::ops::*;
+fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let _args: Vec<String> = env::args().skip(1).collect();
+    let mut parser = CliParser::new();
 
-    let home_dir = dirs::home_dir().expect("Could't find home directory!");
-    let path1: PathBuf = home_dir.join("Pictures/test/");
+    if let Err(e) = parser.read_args(args) {
+	eprintln!("Problem parsing arguments: {}", e);
+	process::exit(1);
+    }
 
-    walk_dir(&path1, &path1)?;
-    Ok(())
+    if let Err(e) = org::run(parser) {
+	eprintln!("Program error: {}", e);
+	process::exit(2);
+    }
 }

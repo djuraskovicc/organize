@@ -65,15 +65,7 @@ fn copy_file(filepath: &Path, outpath: &PathBuf) -> io::Result<()> {
 	create_dirs(&new_path)?;
         new_path.push(filepath.file_name().unwrap());
 
-	// Fix bug:
-	// For some reason when I copy file to another destination it has 0 bytes.
-	// Everything else is fine.
-
-	// Reminder:
-	// This rust exif library doesn't get metadata most of the time, so maybe I need
-	// to get back to exiftool or try something new.
-
-	//fs::copy(filepath, new_path)?;
+	fs::copy(filepath, new_path)?;
     } else {
 	eprintln!("Couldn't get date!");
     }
@@ -85,7 +77,7 @@ fn move_file() -> io::Result<()> {
     Ok(())
 }
 
-pub fn walk_dir(inpath: &PathBuf, outpath: &PathBuf) -> io::Result<()> {
+pub fn walk_dir(inpath: PathBuf, outpath: PathBuf) -> io::Result<()> {
     if !inpath.exists() {
 	return Err(io::Error::new(io::ErrorKind::NotFound, "Input path doesn't exist!"));
     }
@@ -97,7 +89,7 @@ pub fn walk_dir(inpath: &PathBuf, outpath: &PathBuf) -> io::Result<()> {
     for entry in WalkDir::new(inpath).into_iter().filter_map(|e| e.ok()) {
 	if !entry.file_type().is_file() { continue; }
 
-	copy_file(entry.path(), outpath)?;
+	copy_file(entry.path(), &outpath)?;
     }
 
     Ok(())

@@ -1,13 +1,20 @@
 use std::error::Error;
-use crate::cli::args::Flag;
 
 pub struct CliParser {
-    pub flags: Vec<Flag>,
+    pub input: Option<String>,
+    pub output: Option<String>,
+    pub verbose_lvl: u8,
+    pub help: bool,
 }
 
 impl CliParser {
     pub fn new() -> Self {
-	Self { flags: Vec::with_capacity(5) }
+	Self {
+            input: None,
+            output: None,
+            verbose_lvl: 0,
+            help: false,
+        }
     }
 
     pub fn read_args<I>(&mut self, args: I) -> Result<(), Box<dyn Error>> 
@@ -33,14 +40,10 @@ impl CliParser {
     {
 	for c in arg.trim_start_matches('-').chars() {
 	    match c {
-		'h' => self.flags.push(Flag::Help),
-		'v' => self.flags.push(Flag::Verbose { level: 1 }),
-		'o' => {
-		    let value = iter.next().ok_or("Missing value for -o")?;
-		    self.flags.push(Flag::Output { 
-			path: value.clone(),
-		    });
-		},
+		'h' => self.help = true,
+		'v' => self.verbose_lvl += 1,
+		'i' => self.input = Some(iter.next().ok_or("Missing value for --input")?),
+		'o' => self.output = Some(iter.next().ok_or("Missing value for --output")?),
 		_ => return Err(format!("Unknown flag: -{}", c)),
 	    }
 	}
@@ -55,14 +58,10 @@ impl CliParser {
 	let name = arg.trim_start_matches("--");
 
 	match name {
-	    "help" => self.flags.push(Flag::Help),
-	    "verbose" => self.flags.push(Flag::Verbose { level: 1 }),
-	    "output" => {
-		let value = iter.next().ok_or("Mission value for --output")?;
-		self.flags.push(Flag::Output {
-		    path: value.clone(),
-		});
-	    },
+	    "help" => self.help = true,
+	    "verbose" => self.verbose_lvl += 1,
+	    "input" => self.input = Some(iter.next().ok_or("Missing value for --input")?),
+	    "output" => self.output = Some(iter.next().ok_or("Missing value for --output")?),
 	    _ => return Err(format!("Unknown flag --{}", name)),
 	}
 
